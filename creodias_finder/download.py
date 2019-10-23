@@ -24,7 +24,8 @@ def download(uid, username, password, outfile=None, workdir=None):
         :param workdir: Path where incomplete downloads are stored.
         :param outfile: Output filename or absolute path output file.
     """
-    if os.path.isdir(outfile):
+    outfile = _format_path(outfile)
+    if outfile and os.path.isdir(outfile):
         outfile /= f'{uid}.zip'
 
     token_data = {
@@ -50,7 +51,7 @@ def download(uid, username, password, outfile=None, workdir=None):
 
 
 def _format_path(path):
-    if not Path:
+    if not path:
         path = Path(os.getcwd())
     else:
         path = Path(path)
