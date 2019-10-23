@@ -5,6 +5,7 @@ from contextlib import closing
 from os.path import getsize
 import threading
 from multiprocessing.pool import ThreadPool
+from pathlib import Path
 
 import requests
 from tqdm import tqdm
@@ -20,10 +21,11 @@ def download(uid, username, password, outfile=None, workdir=None):
         :param username: Username.
         :param password: Password.
         :param workdir: Path where incomplete downloads are stored.
-        :param outfile: Output filename.
+        :param outfile: Output filename or absolute path output file.
     """
-    if outfile==None:
-        outfile=f'{uid}.zip'
+    outfile = _format_path(outfile)
+    if os.path.isdir(outfile):
+        outfile /= f'{uid}.zip'
 
     token_data = {
     'client_id': 'CLOUDFERRO_PUBLIC',
@@ -36,17 +38,23 @@ def download(uid, username, password, outfile=None, workdir=None):
     token = requests.post('https://auth.creodias.eu/auth/realms/DIAS/protocol/openid-connect/token',
                              data=token_data).json()['access_token']
 
-    if workdir is None:
-        workdir = os.getcwd()
+    workdir = _format_path(workdir)
 
     temp = tempfile.NamedTemporaryFile(delete=False, dir=workdir)
     temp.close()
     local_path = temp.name
 
     url += f'?token={token}'
-    #with requests.get(url, stream=True, headers={'token': token}) as resp:
     _download_raw_data(url, local_path)
     shutil.move(local_path, outfile)
+
+def _format_path(path):
+    if path==None:
+        path = Path(os.getcwd())
+    else:
+        path = Path(path)
+    return path
+
 
 def download_list(uids, username, password, outdir=None, workdir=None, threads=3):
     """Downloads a list of UIDS
@@ -59,11 +67,8 @@ def download_list(uids, username, password, outdir=None, workdir=None, threads=3
     :param threads: Number of simultaneous downloads.
     """
     pool = ThreadPool(threads)
-    #for uid in uids:
-    download_lambda = lambda x : download(x, username, password, outfile=None, workdir=None)
+    download_lambda = lambda x : download(x, username, password, outfile=outdir, workdir=workdir)
     pool.map(download_lambda, uids)
-        #threading.Thread(target=download, args=)
-        #download(uid, username, password, outdir)
 
 
 def _download_raw_data(url, path):
@@ -100,4 +105,4 @@ if __name__ == "__main__":
             'd0e0e0b5-5008-5096-8726-63c242c63511',
             '68959a6d-0793-5df4-8b0c-8daf49b001ba',
             'c9f42d5b-3238-5ee9-8c2d-06b4e3046330']
-    download_list(uids, username='anbr@dhigroup.com', password='aCAtX.D.-qn9vnkGRFDm', threads=6)
+    download_list(uids, username='anbr@dhigroup.com', password='aCAtX.D.-qn9vnkGRFDm', outdir='test', workdir='workdir', threads=6)
