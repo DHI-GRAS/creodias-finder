@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='altimetrydb',
+    name='creodias_finder',
     version='v0.1.0',
     description='Query and download data from CreoDias API',
     author='Pantelis Kouris',
