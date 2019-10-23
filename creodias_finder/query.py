@@ -42,6 +42,7 @@ def query(collection=None, start_date=None, end_date=None, geometry=None, **kwar
         Products returned by the query as a dictionary with the product ID as the key and
         the product's attributes (a dictionary) as the value.
     """
+    url = API_URL
     if collection:
         url = urljoin(API_URL, collection)
     url += f'/search.json?'
