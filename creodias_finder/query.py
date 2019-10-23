@@ -79,14 +79,11 @@ def query(collection=None, start_date=None, end_date=None, geometry=None, **kwar
 
 
 def _parse_date(date):
-    pattern = re.compile(f'''^[0-9]{4}-[0-9]{2}-[0-9]{2}(T[0-9]{2}:[0-9]{2}:[0-9]{2}'''
-                         f'''(\\.[0-9]+)?(|Z|[\\+\\-][0-9]{2}:[0-9]{2}))?$'''
-                         )
     if isinstance(date, datetime.datetime):
         return date
-    elif pattern.match(date):
+    try:
         return dateutil.parser.parse(date)
-    else:
+    catch Exception:
         raise ValueError('Date {date} is not in a valid format. Use Datetime object or iso string')
 
 
