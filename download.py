@@ -14,18 +14,13 @@ pbar = tqdm()
 
 def download(uid, username, password, outfile=None, workdir=None):
     """Downloads a file to the given location.
-    Cycles through credentials if multiple (user, password) sets are given.
     This function stores unfinished downloads in the given working directory.
-    Run with `shadow: 'shallow'` to prevent artefacts.
     Parameters:
-        url (str):
-            URL to download from.
-        outfile (str or Path):
-            Output filename.
-        credentials ((username, password) or iterable of (username, password) pairs):
-            Credentials to use while downloading.
-        workdir (str or Path):
-            Path where incomplete downloads are stored.
+        :param uid: CREO DIAS UID to download.
+        :param username: Username.
+        :param password: Password.
+        :param workdir: Path where incomplete downloads are stored.
+        :param outfile: Output filename.
     """
     if outfile==None:
         outfile=f'{uid}.zip'
@@ -54,6 +49,15 @@ def download(uid, username, password, outfile=None, workdir=None):
     shutil.move(local_path, outfile)
 
 def download_list(uids, username, password, outdir=None, workdir=None, threads=3):
+    """Downloads a list of UIDS
+    File names are [UID].zip
+    :param uids: A list of UIDs.
+    :param username: Username.
+    :param password: Password.
+    :param outdir: Output direcotry.
+    :param workdir: Storage of temporary files
+    :param threads: Number of simultaneous downloads.
+    """
     pool = ThreadPool(threads)
     #for uid in uids:
     download_lambda = lambda x : download(x, username, password, outfile=None, workdir=None)
