@@ -83,7 +83,7 @@ def _parse_date(date):
         return date
     try:
         return dateutil.parser.parse(date)
-    catch Exception:
+    except ValueError e:
         raise ValueError('Date {date} is not in a valid format. Use Datetime object or iso string')
 
 
