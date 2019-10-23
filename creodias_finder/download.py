@@ -5,6 +5,7 @@ from contextlib import closing
 from os.path import getsize
 import threading
 from multiprocessing.pool import ThreadPool
+from pathlib import Path
 
 import requests
 from tqdm import tqdm
@@ -21,10 +22,10 @@ def download(uid, username, password, outfile=None, workdir=None):
         :param username: Username.
         :param password: Password.
         :param workdir: Path where incomplete downloads are stored.
-        :param outfile: Output filename.
+        :param outfile: Output filename or absolute path output file.
     """
-    if not outfile:
-        outfile = f'{uid}.zip'
+    if os.path.isdir(outfile):
+        outfile /= f'{uid}.zip'
 
     token_data = {
         'client_id': 'CLOUDFERRO_PUBLIC',
@@ -37,17 +38,23 @@ def download(uid, username, password, outfile=None, workdir=None):
     token = requests.post('https://auth.creodias.eu/auth/realms/DIAS/protocol/openid-connect/token',
                              data=token_data).json()['access_token']
 
-    if workdir is None:
-        workdir = os.getcwd()
+    workdir = _format_path(workdir)
 
     temp = tempfile.NamedTemporaryFile(delete=False, dir=workdir)
     temp.close()
     local_path = temp.name
 
     url += f'?token={token}'
-    # with requests.get(url, stream=True, headers={'token': token}) as resp:
     _download_raw_data(url, local_path)
     shutil.move(local_path, outfile)
+
+
+def _format_path(path):
+    if not Path:
+        path = Path(os.getcwd())
+    else:
+        path = Path(path)
+    return path
 
 
 def download_list(uids, username, password, outdir=None, workdir=None, threads=3):
@@ -61,11 +68,8 @@ def download_list(uids, username, password, outdir=None, workdir=None, threads=3
     :param threads: Number of simultaneous downloads.
     """
     pool = ThreadPool(threads)
-    # for uid in uids:
-    download_lambda = lambda x: download(x, username, password, outfile=None, workdir=None)
+    download_lambda = lambda x: download(x, username, password, outfile=outdir, workdir=workdir)
     pool.map(download_lambda, uids)
-        #threading.Thread(target=download, args=)
-        #download(uid, username, password, outdir)
 
 
 def _download_raw_data(url, path):
