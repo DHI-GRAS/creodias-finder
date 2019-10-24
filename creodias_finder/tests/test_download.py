@@ -1,10 +1,8 @@
-import os
 from pathlib import Path
 from creodias_finder.download import download, download_list
 
 
 def test_download(uid, username, password, tmp_path, workdir):
-    #outfile, workdir = tmp_path / "outfiles", tmp_path / "workdir"
     create_workdir_if_not_exists(workdir)
 
     outfile = tmp_path
@@ -34,5 +32,3 @@ def create_workdir_if_not_exists(p):
         p = Path(p)
         if not p.is_dir():
             p.mkdir()
-        #if not p.is_file():
-
