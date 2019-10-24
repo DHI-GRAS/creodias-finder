@@ -22,10 +22,11 @@ def download(uid, username, password, outfile=None, workdir=None):
         :param username: Username.
         :param password: Password.
         :param workdir: Path where incomplete downloads are stored.
-        :param outfile: Output filename or absolute path output file.
+        :param outfile: Location or name of output file. If a location is provided, the outfile will
+        be named as [UID].zip. Location can be either absolute or relative.
     """
     outfile = _format_path(outfile)
-    if outfile and os.path.isdir(outfile):
+    if os.path.isdir(outfile):
         outfile /= f'{uid}.zip'
 
     token_data = {
