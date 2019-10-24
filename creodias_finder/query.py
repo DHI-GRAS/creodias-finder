@@ -1,14 +1,12 @@
 import datetime
-from six.moves.urllib.parse import urljoin
+from six.moves.urllib.parse import urljoin, urlencode
 from six import string_types
 import requests
 import dateutil.parser
 
 import re
 
-API_URL = 'http://finder.creodias.eu/resto/api/collections/'
-MAX_PAGES = 1000
-MAX_RECORDS = 1000
+API_URL = 'http://finder.creodias.eu/resto/api/collections/{collection}/search.json?maxRecords=1000'
 
 
 class RequestError(Exception):
@@ -17,7 +15,8 @@ class RequestError(Exception):
         self.errors = errors
 
 
-def query(collection=None, start_date=None, end_date=None, geometry=None, **kwargs):
+def query(collection, start_date=None, end_date=None,
+          geometry=None, progress_bar=True, **kwargs):
     """ Query the EOData Finder API
 
     Parameters
@@ -29,7 +28,7 @@ def query(collection=None, start_date=None, end_date=None, geometry=None, **kwar
     end_date: str or datetime
         the end date of the observations, either in iso formatted string or datetime object
         if no time is specified, time 23:59:59 is added.
-    geometry: str
+    geometry: WKT polygon or object impementing __geo_interface__
         area of interest as well-known text string
     **kwargs
         Additional arguments can be used to specify other query parameters,
@@ -42,40 +41,53 @@ def query(collection=None, start_date=None, end_date=None, geometry=None, **kwar
         Products returned by the query as a dictionary with the product ID as the key and
         the product's attributes (a dictionary) as the value.
     """
-    url = API_URL
-    if collection:
-        url = urljoin(API_URL, collection)
-    url += f'/search.json?'
-    if start_date:
-        start_date = _parse_date(start_date)
-        url += f'&startDate={start_date.isoformat()}'
-    if end_date:
-        end_date = _parse_date(end_date)
-        end_date = _add_time(end_date)
-        url += f'&completionDate={end_date.isoformat()}'
-    if geometry:
-        geometry = _convert_wkt(geometry)
-        url += f'&geometry={geometry}'
-    for attr, value in sorted(kwargs.items()):
-        value = _parse_argvalue(value)
-        url += f'&{attr}={value}'
-
-    url += f'&maxRecords={MAX_RECORDS}'
-    print(url)
+    query_str = _build_query(
+        API_URL.format(collection=collection),
+        start_date,
+        end_date,
+        geometry,
+        **kwargs
+    )
 
     query_response = {}
-    for page in range(1000):
-        url_page = url + f'&page={page + 1}'
-        response = requests.get(url_page)
+    while query_str:
+        response = requests.get(query_str)
         response.raise_for_status()
         data = response.json()
-        if data['properties']['itemsPerPage'] == 0:
-            break
-        if page == 999:
-            raise RequestError(f'The query is too large.')
         for feature in data['features']:
             query_response[feature['id']] = feature
+        query_str = _find_next(data['properties']['links'])
     return query_response
+
+
+def _build_query(base_url, start_date=None, end_date=None, geometry=None, **kwargs):
+    query_params = {}
+
+    if start_date is not None:
+        start_date = _parse_date(start_date)
+        query_params['startDate'] = start_date.isoformat()
+    if end_date is not None:
+        end_date = _parse_date(end_date)
+        end_date = _add_time(end_date)
+        query_params['completionDate'] = end_date.isoformat()
+
+    if geometry is not None:
+        query_params['geometry'] = _parse_geometry(geometry)
+
+    for attr, value in sorted(kwargs.items()):
+        value = _parse_argvalue(value)
+        query_params[attr] = value
+
+    if query_params:
+        base_url += f'&{urlencode(query_params)}'
+    return base_url
+
+
+def _find_next(links):
+    for link in links:
+        if link['rel'] == 'next':
+            return link['href']
+    return False
 
 
 def _parse_date(date):
@@ -94,11 +106,21 @@ def _add_time(date):
     return date
 
 
-def _convert_wkt(geometry):
+def _tastes_like_wkt_polygon(geometry):
     try:
         return geometry.replace(", ", ",").replace(" ", "", 1).replace(" ", "+")
     except Exception:
         raise ValueError('Geometry must be in well-known text format')
+
+
+def _parse_geometry(geom):
+    try:
+        # If geom has a __geo_interface__
+        return shape(geom).wkt
+    except AttributeError:
+        if _tastes_like_wkt_polygon(geom):
+            return geom
+        raise ValueError('geometry must be a WKT polygon str or have a __geo_interface__')
 
 
 def _parse_argvalue(value):
