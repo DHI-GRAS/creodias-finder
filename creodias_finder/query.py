@@ -15,7 +15,8 @@ class RequestError(Exception):
         self.errors = errors
 
 
-def query(collection, start_date=None, end_date=None, geometry=None, **kwargs):
+def query(collection, start_date=None, end_date=None,
+          geometry=None, progress_bar=True, **kwargs):
     """ Query the EOData Finder API
 
     Parameters
@@ -27,7 +28,7 @@ def query(collection, start_date=None, end_date=None, geometry=None, **kwargs):
     end_date: str or datetime
         the end date of the observations, either in iso formatted string or datetime object
         if no time is specified, time 23:59:59 is added.
-    geometry: str
+    geometry: WKT polygon or object impementing __geo_interface__
         area of interest as well-known text string
     **kwargs
         Additional arguments can be used to specify other query parameters,
@@ -105,11 +106,21 @@ def _add_time(date):
     return date
 
 
-def _convert_wkt(geometry):
+def _tastes_like_wkt_polygon(geometry):
     try:
         return geometry.replace(", ", ",").replace(" ", "", 1).replace(" ", "+")
     except Exception:
         raise ValueError('Geometry must be in well-known text format')
+
+
+def _parse_geometry(geom):
+    try:
+        # If geom has a __geo_interface__
+        return shape(geom).wkt
+    except AttributeError:
+        if _tastes_like_wkt_polygon(geom):
+            return geom
+        raise ValueError('geometry must be a WKT polygon str or have a __geo_interface__')
 
 
 def _parse_argvalue(value):
