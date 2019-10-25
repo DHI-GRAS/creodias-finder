@@ -2,8 +2,6 @@ import os
 import shutil
 import tempfile
 from contextlib import closing
-from os.path import getsize
-import threading
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
 
@@ -11,19 +9,30 @@ import requests
 from tqdm import tqdm
 
 
-pbar = tqdm()
+PBAR = tqdm()
 
 
 def download(uid, username, password, outfile=None, workdir=None):
     """Downloads a file to the given location.
     This function stores unfinished downloads in the given working directory.
-    Parameters:
-        :param uid: CREO DIAS UID to download.
-        :param username: Username.
-        :param password: Password.
-        :param workdir: Path where incomplete downloads are stored.
-        :param outfile: Location or name of output file. If a location is provided, the outfile will
+
+    Parameters
+    ----------
+    uid:
+        CREO DIAS UID to download.
+    username:
+        Username.
+    password:
+        Password.
+    outfile:
+        Path where incomplete downloads are stored.
+    workdir:
+        Location or name of output file. If a location is provided, the outfile will
         be named as [UID].zip. Location can be either absolute or relative.
+
+    Returns
+    -------
+    None
     """
     outfile = _format_path(outfile)
     if os.path.isdir(outfile):
@@ -38,7 +47,7 @@ def download(uid, username, password, outfile=None, workdir=None):
     url = f'https://zipper.creodias.eu/download/{uid}'
 
     token = requests.post('https://auth.creodias.eu/auth/realms/DIAS/protocol/openid-connect/token',
-                             data=token_data).json()['access_token']
+                          data=token_data).json()['access_token']
 
     workdir = _format_path(workdir)
 
@@ -52,6 +61,7 @@ def download(uid, username, password, outfile=None, workdir=None):
 
 
 def _format_path(path):
+    """Change path to a Path object"""
     if not path:
         path = Path(os.getcwd())
     else:
@@ -61,35 +71,46 @@ def _format_path(path):
 
 def download_list(uids, username, password, outdir=None, workdir=None, threads=3):
     """Downloads a list of UIDS
-    File names are [UID].zip
-    :param uids: A list of UIDs.
-    :param username: Username.
-    :param password: Password.
-    :param outdir: Output direcotry.
-    :param workdir: Storage of temporary files
-    :param threads: Number of simultaneous downloads.
+
+    Parameters
+    ----------
+    uids:
+        A list of UIDs.
+    username:
+        Username.
+    password:
+        Password.
+    outdir:
+        Output direcotry.
+    workdir:
+        Storage of temporary files
+    threads:
+        Number of simultaneous downloads.
+
+    Returns
+    -------
+    None
     """
     pool = ThreadPool(threads)
     download_lambda = lambda x: download(x, username, password, outfile=outdir, workdir=workdir)
     pool.map(download_lambda, uids)
 
 
-def _download_raw_data(url, path):
-    already_downloaded_bytes = getsize(path)
+def _download_raw_data(url, output_path):
+    """Downloads data from url to output_path"""
     downloaded_bytes = 0
-    headers = {"Range": "bytes={}-".format(already_downloaded_bytes)}
     with closing(
             requests.get(url, stream=True, timeout=10)
-    ) as r, tqdm(
+    ) as req, tqdm(
         unit='B',
         unit_scale=True
     ) as progress:
         chunk_size = 2 ** 20  # download in 1 MB chunks
         i = 0
-        with open(path, 'wb') as f:
-            for chunk in r.iter_content(chunk_size=chunk_size):
+        with open(output_path, 'wb') as outfile:
+            for chunk in req.iter_content(chunk_size=chunk_size):
                 if chunk:  # filter out keep-alive new chunks
-                    f.write(chunk)
+                    outfile.write(chunk)
                     progress.update(len(chunk))
                     downloaded_bytes += len(chunk)
                     i += 1
