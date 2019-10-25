@@ -7,6 +7,7 @@ import dateutil.parser
 import re
 
 API_URL = 'http://finder.creodias.eu/resto/api/collections/{collection}/search.json?maxRecords=1000'
+ONLINE_STATUS_CODES = '34|37|0'
 
 
 class RequestError(Exception):
@@ -16,7 +17,7 @@ class RequestError(Exception):
 
 
 def query(collection, start_date=None, end_date=None,
-          geometry=None, progress_bar=True, **kwargs):
+          geometry=None, status=ONLINE_STATUS_CODES, progress_bar=True, **kwargs):
     """ Query the EOData Finder API
 
     Parameters
@@ -46,6 +47,7 @@ def query(collection, start_date=None, end_date=None,
         start_date,
         end_date,
         geometry,
+        status,
         **kwargs
     )
 
@@ -60,8 +62,10 @@ def query(collection, start_date=None, end_date=None,
     return query_response
 
 
-def _build_query(base_url, start_date=None, end_date=None, geometry=None, **kwargs):
+def _build_query(base_url, start_date=None, end_date=None, geometry=None, status=None, **kwargs):
     query_params = {}
+
+
 
     if start_date is not None:
         start_date = _parse_date(start_date)
@@ -73,6 +77,9 @@ def _build_query(base_url, start_date=None, end_date=None, geometry=None, **kwar
 
     if geometry is not None:
         query_params['geometry'] = _parse_geometry(geometry)
+
+    if status is not None:
+        query_params['status'] = status
 
     for attr, value in sorted(kwargs.items()):
         value = _parse_argvalue(value)
