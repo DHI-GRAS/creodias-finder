@@ -15,20 +15,20 @@ def test_download_list(uids, username, password, tmp_path):
     outfile.mkdir()
     workdir.mkdir()
     download_list(uids, username, password,
-                  outdir=outfile, workdir=workdir, threads=max(10,len(uids)))
+                  outdir=outfile, workdir=workdir, threads=max(10, len(uids)))
 
     created_files = set()
-    for p in outfile.glob("*"):
-        created_files.add(str(p))
+    for glob_file in outfile.glob("*"):
+        created_files.add(str(glob_file))
     file_assertions = set()
     for uid in uids:
         file_assertions.add(str(outfile / f'{uid}.zip'))
 
     assert created_files == file_assertions
 
-def create_workdir_if_not_exists(p):
-    if p:
-        print('THIS IS P ', p)
-        p = Path(p)
-        if not p.is_dir():
-            p.mkdir()
+def create_workdir_if_not_exists(path):
+    if path:
+        print('THIS IS P ', path)
+        path = Path(path)
+        if not path.is_dir():
+            path.mkdir()
