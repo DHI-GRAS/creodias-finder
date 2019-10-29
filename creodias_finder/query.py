@@ -3,6 +3,7 @@ from six.moves.urllib.parse import urljoin, urlencode
 from six import string_types
 import requests
 import dateutil.parser
+from shapely.geometry import shape
 
 import re
 

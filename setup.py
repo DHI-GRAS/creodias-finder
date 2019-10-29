@@ -12,6 +12,7 @@ setup(
         'requests',
         'six',
         'tqdm',
-        'python-dateutil'
+        'python-dateutil',
+        'shapely'
     ]
 )
