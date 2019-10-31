@@ -56,7 +56,9 @@ def download_list(uids, username, password, outdir, threads=1):
         mapping uids to paths to downloaded files
     """
     def _download(uid):
-        return uid, download(uid, username, password, outfile=outdir)
+        outfile = Path(outdir) / '{uuid}.zip'
+        download(uid, username, password, outfile=outfile)
+        return uid, outfile
 
     with concurrent.futures.ThreadPoolExecutor(threads) as executor:
         paths = dict(executor.map(_download, uids))
