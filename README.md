@@ -6,14 +6,12 @@ products.
 Exposes a single function `query`
 
 ```python
-from creodias_finder.download import download, download_list
-from creodias_finder.query import query
-import geojson
-
 import os
-
+import geojson
 from datetime import datetime
 
+from creodias_finder.download import download, download_list
+from creodias_finder.query import query
 
 q = query('Sentinel1',
       start_date=datetime(2019, 1, 1),
