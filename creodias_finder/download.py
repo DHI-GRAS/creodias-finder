@@ -1,7 +1,7 @@
 import os
+import contextlib
 import shutil
 import tempfile
-from contextlib import closing
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
 
@@ -9,10 +9,7 @@ import requests
 from tqdm import tqdm
 
 
-PBAR = tqdm()
-
-
-def download(uid, username, password, outfile=None, workdir=None):
+def download(uid, username, password, outfile=None, workdir=None, show_progress=True):
     """Downloads a file to the given location.
     This function stores unfinished downloads in the given working directory.
 
@@ -56,7 +53,7 @@ def download(uid, username, password, outfile=None, workdir=None):
     local_path = temp.name
 
     url += f'?token={token}'
-    _download_raw_data(url, local_path)
+    _download_raw_data(url, local_path, show_progress)
     shutil.move(local_path, outfile)
 
 
@@ -69,7 +66,7 @@ def _format_path(path):
     return path
 
 
-def download_list(uids, username, password, outdir=None, workdir=None, threads=3):
+def download_list(uids, username, password, outdir=None, workdir=None, threads=3, show_progress=True):
     """Downloads a list of UIDS
 
     Parameters
@@ -92,27 +89,31 @@ def download_list(uids, username, password, outdir=None, workdir=None, threads=3
     None
     """
     pool = ThreadPool(threads)
-    download_lambda = lambda x: download(x, username, password, outfile=outdir, workdir=workdir)
+    download_lambda = lambda x: download(x, username, password,
+                                         outfile=outdir, workdir=workdir, show_progress=show_progress)
     pool.map(download_lambda, uids)
 
 
-def _download_raw_data(url, output_path):
+def _download_raw_data(url, output_path, show_progress=True):
     """Downloads data from url to output_path"""
     downloaded_bytes = 0
-    with closing(
-            requests.get(url, stream=True, timeout=10)
-    ) as req, tqdm(
-        unit='B',
-        unit_scale=True
-    ) as progress:
+    progress = None
+    with contextlib.ExitStack() as stack:
+        req = stack.enter_context(requests.get(url, stream=True, timeout=10))
+        if show_progress:
+            progress = stack.enter_context(tqdm(
+                unit='B',
+                unit_scale=True
+            ))
         chunk_size = 2 ** 20  # download in 1 MB chunks
         i = 0
-        with open(output_path, 'wb') as outfile:
-            for chunk in req.iter_content(chunk_size=chunk_size):
-                if chunk:  # filter out keep-alive new chunks
-                    outfile.write(chunk)
+        outfile = stack.enter_context(open(output_path, 'wb'))
+        for chunk in req.iter_content(chunk_size=chunk_size):
+            if chunk:  # filter out keep-alive new chunks
+                outfile.write(chunk)
+                if show_progress:
                     progress.update(len(chunk))
-                    downloaded_bytes += len(chunk)
-                    i += 1
+                downloaded_bytes += len(chunk)
+                i += 1
         # Return the number of bytes downloaded
         return downloaded_bytes
