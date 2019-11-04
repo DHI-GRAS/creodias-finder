@@ -99,7 +99,7 @@ def _download_raw_data(url, output_path, show_progress=True):
     downloaded_bytes = 0
     progress = None
     with contextlib.ExitStack() as stack:
-        req = stack.enter_context(requests.get(url, stream=True, timeout=10))
+        req = stack.enter_context(requests.get(url, stream=True, timeout=1000))
         if show_progress:
             progress = stack.enter_context(tqdm(
                 unit='B',
