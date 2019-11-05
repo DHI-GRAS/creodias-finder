@@ -6,7 +6,7 @@ import requests
 from tqdm import tqdm
 
 DOWNLOAD_URL = 'https://zipper.creodias.eu/download'
-TOKEN_URL = 'https://auth.creodias.eu/auth/realms/DIAS/protocol/openid-connect/token',
+TOKEN_URL = 'https://auth.creodias.eu/auth/realms/DIAS/protocol/openid-connect/token'
 
 
 def download(uid, username, password, outfile):
