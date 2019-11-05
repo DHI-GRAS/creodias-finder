@@ -88,9 +88,9 @@ def _download_raw_data(url, outfile):
                             fout.write(chunk)
                             progress.update(len(chunk))
                             downloaded_bytes += len(chunk)
+        shutil.move(outfile_temp, outfile)
     finally:
         try:
             Path(outfile_temp).unlink()
         except OSError:
             pass
-    shutil.move(outfile_temp, outfile)
