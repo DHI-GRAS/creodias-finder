@@ -88,9 +88,13 @@ def download_list(uids, username, password, outdir=None, workdir=None, threads=3
     -------
     None
     """
+    if show_progress:
+        t = tqdm(total = len(uids), unit='files')
     pool = ThreadPool(threads)
-    download_lambda = lambda x: download(x, username, password,
-                                         outfile=outdir, workdir=workdir, show_progress=show_progress)
+    def download_lambda(x):
+        download(x, username, password, outfile=outdir, workdir=workdir, show_progress=False)
+        if show_progress:
+            t.update(1)
     pool.map(download_lambda, uids)
 
 
