@@ -9,6 +9,20 @@ DOWNLOAD_URL = 'https://zipper.creodias.eu/download'
 TOKEN_URL = 'https://auth.creodias.eu/auth/realms/DIAS/protocol/openid-connect/token'
 
 
+def _get_token(username, password):
+    token_data = {
+        'client_id': 'CLOUDFERRO_PUBLIC',
+        'username': username,
+        'password': password,
+        'grant_type': 'password'
+    }
+    response = requests.post(TOKEN_URL, data=token_data).json()
+    try:
+        return response['access_token']
+    except KeyError:
+        raise RuntimeError(f'Unable to get token. Response was {response}')
+
+
 def download(uid, username, password, outfile):
     """Download a file from CreoDIAS to the given location
 
@@ -23,13 +37,7 @@ def download(uid, username, password, outfile):
     outfile:
         Path where incomplete downloads are stored
     """
-    token_data = {
-        'client_id': 'CLOUDFERRO_PUBLIC',
-        'username': username,
-        'password': password,
-        'grant_type': 'password'
-    }
-    token = requests.post(TOKEN_URL, data=token_data).json()['access_token']
+    token = _get_token(username, password)
     url = f'{DOWNLOAD_URL}/{uid}?token={token}'
     _download_raw_data(url, outfile)
 
