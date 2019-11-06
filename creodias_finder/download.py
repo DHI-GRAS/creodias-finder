@@ -1,123 +1,96 @@
-import os
-import contextlib
 import shutil
-import tempfile
-from multiprocessing.pool import ThreadPool
 from pathlib import Path
+import concurrent.futures
 
 import requests
 from tqdm import tqdm
 
+DOWNLOAD_URL = 'https://zipper.creodias.eu/download'
+TOKEN_URL = 'https://auth.creodias.eu/auth/realms/DIAS/protocol/openid-connect/token'
 
-def download(uid, username, password, outfile=None, workdir=None, show_progress=True):
-    """Downloads a file to the given location.
-    This function stores unfinished downloads in the given working directory.
 
-    Parameters
-    ----------
-    uid:
-        CREO DIAS UID to download.
-    username:
-        Username.
-    password:
-        Password.
-    outfile:
-        Path where incomplete downloads are stored.
-    workdir:
-        Location or name of output file. If a location is provided, the outfile will
-        be named as [UID].zip. Location can be either absolute or relative.
-
-    Returns
-    -------
-    None
-    """
-    outfile = _format_path(outfile)
-    if os.path.isdir(outfile):
-        outfile /= f'{uid}.zip'
-
+def _get_token(username, password):
     token_data = {
         'client_id': 'CLOUDFERRO_PUBLIC',
         'username': username,
         'password': password,
         'grant_type': 'password'
     }
-    url = f'https://zipper.creodias.eu/download/{uid}'
-
-    token = requests.post('https://auth.creodias.eu/auth/realms/DIAS/protocol/openid-connect/token',
-                          data=token_data).json()['access_token']
-
-    workdir = _format_path(workdir)
-
-    temp = tempfile.NamedTemporaryFile(delete=False, dir=workdir)
-    temp.close()
-    local_path = temp.name
-
-    url += f'?token={token}'
-    _download_raw_data(url, local_path, show_progress)
-    shutil.move(local_path, outfile)
+    response = requests.post(TOKEN_URL, data=token_data).json()
+    try:
+        return response['access_token']
+    except KeyError:
+        raise RuntimeError(f'Unable to get token. Response was {response}')
 
 
-def _format_path(path):
-    """Change path to a Path object"""
-    if not path:
-        path = Path(os.getcwd())
-    else:
-        path = Path(path)
-    return path
+def download(uid, username, password, outfile):
+    """Download a file from CreoDIAS to the given location
+
+    Parameters
+    ----------
+    uid:
+        CreoDIAS UID to download
+    username:
+        Username
+    password:
+        Password
+    outfile:
+        Path where incomplete downloads are stored
+    """
+    token = _get_token(username, password)
+    url = f'{DOWNLOAD_URL}/{uid}?token={token}'
+    _download_raw_data(url, outfile)
 
 
-def download_list(uids, username, password, outdir=None, workdir=None, threads=3, show_progress=True):
+def download_list(uids, username, password, outdir, threads=1):
     """Downloads a list of UIDS
 
     Parameters
     ----------
     uids:
-        A list of UIDs.
+        A list of UIDs
     username:
-        Username.
+        Username
     password:
-        Password.
+        Password
     outdir:
-        Output direcotry.
-    workdir:
-        Storage of temporary files
+        Output direcotry
     threads:
-        Number of simultaneous downloads.
+        Number of simultaneous downloads
 
     Returns
     -------
-    None
+    dict
+        mapping uids to paths to downloaded files
     """
-    if show_progress:
-        t = tqdm(total = len(uids), unit='files')
-    pool = ThreadPool(threads)
-    def download_lambda(x):
-        download(x, username, password, outfile=outdir, workdir=workdir, show_progress=False)
-        if show_progress:
-            t.update(1)
-    pool.map(download_lambda, uids)
+    def _download(uid):
+        outfile = Path(outdir) / '{uuid}.zip'
+        download(uid, username, password, outfile=outfile)
+        return uid, outfile
+
+    with concurrent.futures.ThreadPoolExecutor(threads) as executor:
+        paths = dict(executor.map(_download, uids))
+
+    return paths
 
 
-def _download_raw_data(url, output_path, show_progress=True):
-    """Downloads data from url to output_path"""
-    downloaded_bytes = 0
-    progress = None
-    with contextlib.ExitStack() as stack:
-        req = stack.enter_context(requests.get(url, stream=True, timeout=1000))
-        if show_progress:
-            progress = stack.enter_context(tqdm(
-                unit='B',
-                unit_scale=True
-            ))
-        chunk_size = 2 ** 20  # download in 1 MB chunks
-        i = 0
-        outfile = stack.enter_context(open(output_path, 'wb'))
-        for chunk in req.iter_content(chunk_size=chunk_size):
-            if chunk:  # filter out keep-alive new chunks
-                outfile.write(chunk)
-                if show_progress:
-                    progress.update(len(chunk))
-                downloaded_bytes += len(chunk)
-                i += 1
-        # Return the number of bytes downloaded
-        return downloaded_bytes
+def _download_raw_data(url, outfile):
+    """Downloads data from url to outfile.incomplete and then moves to outfile"""
+    outfile_temp = str(outfile) + '.incomplete'
+    try:
+        downloaded_bytes = 0
+        with requests.get(url, stream=True, timeout=10) as req:
+            with tqdm(unit='B', unit_scale=True) as progress:
+                chunk_size = 2 ** 20  # download in 1 MB chunks
+                with open(outfile_temp, 'wb') as fout:
+                    for chunk in req.iter_content(chunk_size=chunk_size):
+                        if chunk:  # filter out keep-alive new chunks
+                            fout.write(chunk)
+                            progress.update(len(chunk))
+                            downloaded_bytes += len(chunk)
+        shutil.move(outfile_temp, outfile)
+    finally:
+        try:
+            Path(outfile_temp).unlink()
+        except OSError:
+            pass

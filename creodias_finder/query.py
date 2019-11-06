@@ -1,24 +1,22 @@
 import datetime
-from six.moves.urllib.parse import urljoin, urlencode
+from six.moves.urllib.parse import urlencode
 from six import string_types
+
 import requests
 import dateutil.parser
 from shapely.geometry import shape
 
 import re
 
-API_URL = 'http://finder.creodias.eu/resto/api/collections/{collection}/search.json?maxRecords=1000'
+API_URL = (
+    'http://finder.creodias.eu/resto/api/collections/{collection}'
+    '/search.json?maxRecords=1000'
+)
 ONLINE_STATUS_CODES = '34|37|0'
 
 
-class RequestError(Exception):
-    def __init__(self, message, errors):
-        super().__init__(message)
-        self.errors = errors
-
-
 def query(collection, start_date=None, end_date=None,
-          geometry=None, status=ONLINE_STATUS_CODES, progress_bar=True, **kwargs):
+          geometry=None, status=ONLINE_STATUS_CODES, **kwargs):
     """ Query the EOData Finder API
 
     Parameters
@@ -32,6 +30,8 @@ def query(collection, start_date=None, end_date=None,
         if no time is specified, time 23:59:59 is added.
     geometry: WKT polygon or object impementing __geo_interface__
         area of interest as well-known text string
+    status : str
+        allowed online/offline statuses (|-separated for OR)
     **kwargs
         Additional arguments can be used to specify other query parameters,
         e.g. productType=L1GT
@@ -43,7 +43,7 @@ def query(collection, start_date=None, end_date=None,
         Products returned by the query as a dictionary with the product ID as the key and
         the product's attributes (a dictionary) as the value.
     """
-    query_str = _build_query(
+    query_url = _build_query(
         API_URL.format(collection=collection),
         start_date,
         end_date,
@@ -53,20 +53,18 @@ def query(collection, start_date=None, end_date=None,
     )
 
     query_response = {}
-    while query_str:
-        response = requests.get(query_str)
+    while query_url:
+        response = requests.get(query_url)
         response.raise_for_status()
         data = response.json()
         for feature in data['features']:
             query_response[feature['id']] = feature
-        query_str = _find_next(data['properties']['links'])
+        query_url = _get_next_page(data['properties']['links'])
     return query_response
 
 
 def _build_query(base_url, start_date=None, end_date=None, geometry=None, status=None, **kwargs):
     query_params = {}
-
-
 
     if start_date is not None:
         start_date = _parse_date(start_date)
@@ -86,12 +84,14 @@ def _build_query(base_url, start_date=None, end_date=None, geometry=None, status
         value = _parse_argvalue(value)
         query_params[attr] = value
 
+    url = base_url
     if query_params:
-        base_url += f'&{urlencode(query_params)}'
-    return base_url
+        url += f'&{urlencode(query_params)}'
+
+    return url
 
 
-def _find_next(links):
+def _get_next_page(links):
     for link in links:
         if link['rel'] == 'next':
             return link['href']
@@ -132,7 +132,6 @@ def _parse_geometry(geom):
 
 
 def _parse_argvalue(value):
-
     if isinstance(value, string_types):
         value = value.strip()
         if not any(
@@ -141,7 +140,6 @@ def _parse_argvalue(value):
         ):
             value = re.sub(r"\s", r"\ ", value, re.M)
         return value
-
     elif isinstance(value, (list, tuple)):
         # Handle value ranges
         if len(value) == 2:
@@ -152,7 +150,6 @@ def _parse_argvalue(value):
                 "Invalid number of elements in list. Expected 2, received "
                 "{}".format(len(value))
             )
-
     else:
         raise ValueError(
             "Additional arguments can be either string or tuple/list of 2 values"
