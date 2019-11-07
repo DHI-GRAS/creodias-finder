@@ -3,29 +3,23 @@ Query the [CREO Data finder API](https://creodias.eu/eo-data-finder-api-manual) 
 products.
 
 ## Usage
-Exposes a single function `query`
+
+Query and download Sentinel-1 products for a given time range
 
 ```python
-import os
 import geojson
 from datetime import datetime
 
-from creodias_finder.download import download, download_list
-from creodias_finder.query import query
+from creodias_finder import query
 
-q = query('Sentinel1',
-      start_date=datetime(2019, 1, 1),
-      end_date=datetime(2019, 1, 2))
-
-ids = [q[key]['id'] for key in q.keys()]
-
-username = os.environ['CREODIAS_USERNAME'] 
-password = os.environ['CREODIAS_PASSWORD']
-
-download(ids[0], username=username, password=password, outfile='/home/andreas/data/')
-
-download_list(ids[1:11], username=username, password=password, threads=10)
+results = query.query(
+    'Sentinel1',
+    start_date=datetime(2019, 1, 1),
+    end_date=datetime(2019, 1, 2)
+)
 ```
+
+Returns
 
 ```python
 [
@@ -58,4 +52,24 @@ download_list(ids[1:11], username=username, password=password, threads=10)
                                   'href': 'https://finder.creodias.eu/resto/api/collections/Sentinel1/search.json?&lang=en&q=Antarctica',
     ...
 ]
+```
+
+Download selected products
+
+```python
+
+from creodias_finder import download
+
+ids = [result['id'] for key in results.values()]
+
+CREDENTIALS = {
+    username: 'my-creodias-email',
+    password: 'my-creodias-password'
+}
+
+# download single product by product ID
+download.download(ids[0], outfile='/home/andreas/data/', **CREDENTIALS)
+
+# download a list of products, multithreaded
+download.download_list(ids[1:11], threads=10, **CREDENTIALS)
 ```
