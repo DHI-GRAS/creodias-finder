@@ -14,5 +14,13 @@ setup(
         'tqdm',
         'python-dateutil',
         'shapely'
-    ]
+    ],
+    extras_require={
+        'test': [
+            'pytest',
+            'pytest-cov',
+            'pytest-flake8',
+            'codecov',
+        ],
+    },
 )

@@ -1,0 +1,25 @@
+language: python
+
+dist: xenial
+
+python:
+  - "3.8"
+  - "3.7"
+  - "3.6"
+
+branches:
+  only:
+    - master
+
+addons:
+  apt:
+    update: true
+
+install:
+  - pip install -e .[test]
+
+script:
+  - python -m pytest --cov=creodias_finder
+
+after_success:
+  - codecov
