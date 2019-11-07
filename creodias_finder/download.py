@@ -83,7 +83,7 @@ def _download_raw_data(url, outfile, show_progress):
     outfile_temp = str(outfile) + '.incomplete'
     try:
         downloaded_bytes = 0
-        with requests.get(url, stream=True, timeout=10) as req:
+        with requests.get(url, stream=True, timeout=10000) as req:
             with tqdm(unit='B', unit_scale=True, disable=not show_progress) as progress:
                 chunk_size = 2 ** 20  # download in 1 MB chunks
                 with open(outfile_temp, 'wb') as fout:
