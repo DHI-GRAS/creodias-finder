@@ -1,4 +1,5 @@
 import shutil
+import contextlib
 from pathlib import Path
 import concurrent.futures
 
@@ -31,11 +32,11 @@ def download(uid, username, password, outfile, show_progress=True):
     uid:
         CreoDIAS UID to download
     username:
-        Username
+        CreoDIAS username (email address)
     password:
-        Password
+        CreoDIAS password
     outfile:
-        Path where incomplete downloads are stored
+        path to output file
     """
     token = _get_token(username, password)
     url = f'{DOWNLOAD_URL}/{uid}?token={token}'
@@ -50,13 +51,13 @@ def download_list(uids, username, password, outdir, threads=1, show_progress=Tru
     uids:
         A list of UIDs
     username:
-        Username
+        CreoDIAS username (email address)
     password:
-        Password
+        CreoDIAS password
     outdir:
-        Output direcotry
+        output direcotry
     threads:
-        Number of simultaneous downloads
+        number of simultaneous downloads
 
     Returns
     -------
@@ -78,20 +79,21 @@ def download_list(uids, username, password, outdir, threads=1, show_progress=Tru
     return paths
 
 
-def _download_raw_data(url, outfile, show_progress):
+def _download_raw_data(url, outfile, show_progress=False):
     """Downloads data from url to outfile.incomplete and then moves to outfile"""
     outfile_temp = str(outfile) + '.incomplete'
     try:
-        downloaded_bytes = 0
-        with requests.get(url, stream=True, timeout=10) as req:
-            with tqdm(unit='B', unit_scale=True, disable=not show_progress) as progress:
-                chunk_size = 2 ** 20  # download in 1 MB chunks
-                with open(outfile_temp, 'wb') as fout:
-                    for chunk in req.iter_content(chunk_size=chunk_size):
-                        if chunk:  # filter out keep-alive new chunks
-                            fout.write(chunk)
-                            progress.update(len(chunk))
-                            downloaded_bytes += len(chunk)
+        with contextlib.ExitStack() as stack:
+            downloaded_bytes = 0
+            req = stack.enter_context(requests.get(url, stream=True, timeout=10))
+            progress = stack.enter_context(tqdm(unit='B', unit_scale=True, disable=not show_progress))
+            chunk_size = 2 ** 20  # download in 1 MB chunks
+            fout = stack.enter_context(open(outfile_temp, 'wb'))
+            for chunk in req.iter_content(chunk_size=chunk_size):
+                if chunk:  # filter out keep-alive new chunks
+                    fout.write(chunk)
+                    progress.update(len(chunk))
+                    downloaded_bytes += len(chunk)
         shutil.move(outfile_temp, outfile)
     finally:
         try:
