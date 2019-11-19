@@ -13,7 +13,6 @@ setup(
         'six',
         'tqdm',
         'python-dateutil',
-        'shapely',
-        'timeout-decorator'
+        'shapely'
     ]
 )
