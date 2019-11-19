@@ -65,6 +65,7 @@ def download_list(uids, username, password, outdir, threads=1, show_progress=Tru
     """
     if show_progress:
         pbar =  tqdm(total = len(uids), unit='files')
+    @timeout_decorator(3000, use_signals=False)
     def _download(uid):
         outfile = Path(outdir) / f'{uid}.zip'
         download(uid, username, password, outfile=outfile, show_progress=False)
@@ -83,7 +84,7 @@ def _download_raw_data(url, outfile, show_progress):
     outfile_temp = str(outfile) + '.incomplete'
     try:
         downloaded_bytes = 0
-        with requests.get(url, stream=True, timeout=10000) as req:
+        with requests.get(url, stream=True, timeout=100) as req:
             with tqdm(unit='B', unit_scale=True, disable=not show_progress) as progress:
                 chunk_size = 2 ** 20  # download in 1 MB chunks
                 with open(outfile_temp, 'wb') as fout:
