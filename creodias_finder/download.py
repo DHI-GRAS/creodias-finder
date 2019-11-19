@@ -1,7 +1,6 @@
 import shutil
 from pathlib import Path
 import concurrent.futures
-import timeout_decorator
 
 import requests
 from tqdm import tqdm
@@ -66,7 +65,6 @@ def download_list(uids, username, password, outdir, threads=1, show_progress=Tru
     """
     if show_progress:
         pbar =  tqdm(total = len(uids), unit='files')
-    @timeout_decorator.timeout(3000, use_signals=False)
     def _download(uid):
         outfile = Path(outdir) / f'{uid}.zip'
         download(uid, username, password, outfile=outfile, show_progress=False)
