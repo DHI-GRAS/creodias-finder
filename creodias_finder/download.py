@@ -42,6 +42,38 @@ def download(uid, username, password, outfile, show_progress=True):
     _download_raw_data(url, outfile, show_progress)
 
 
+def download_from_s3(source_path, target_path):
+    """Download a file from CreoDIAS S3 storage to the given location
+       (Works only when used from a CreoDIAS vm)
+
+    Parameters
+    ----------
+    source_path:
+        CreoDIAS path to S3 object
+    target_path:
+        Path to write the product folder
+    """
+    import boto3
+    from botocore.client import Config
+
+    from creodias_finder.creodias_storage import S3Storage
+
+    s3_client = boto3.client(
+        's3',
+        endpoint_url='http://data.cloudferro.com/',
+        use_ssl=False,
+        aws_access_key_id='access',
+        aws_secret_access_key='secret',
+        config=Config(
+            signature_version='s3',
+            connect_timeout=60,
+            read_timeout=60,
+        )
+    )
+    storage_client = S3Storage(s3_client)
+    storage_client.download_product('DIAS', source_path, str(target_path))
+
+
 def download_list(uids, username, password, outdir, threads=1, show_progress=True):
     """Downloads a list of UIDS
 
