@@ -1,6 +1,7 @@
 import shutil
 from pathlib import Path
 import concurrent.futures
+from multiprocessing.pool import ThreadPool
 
 import requests
 from tqdm import tqdm
@@ -42,7 +43,7 @@ def download(uid, username, password, outfile, show_progress=True):
     _download_raw_data(url, outfile, show_progress)
 
 
-def download_from_s3(source_path, outdir):
+def download_from_s3(source_path, outdir, s3_client=None):
     """Download a file from CreoDIAS S3 storage to the given location
        (Works only when used from a CreoDIAS vm)
 
@@ -58,6 +59,30 @@ def download_from_s3(source_path, outdir):
     import os
 
     from creodias_finder.creodias_storage import S3Storage
+    if not s3_client:
+        s3_client = boto3.client(
+            's3',
+            endpoint_url='http://data.cloudferro.com/',
+            use_ssl=False,
+            aws_access_key_id='access',
+            aws_secret_access_key='secret',
+            config=Config(
+                signature_version='s3',
+                connect_timeout=60,
+                read_timeout=60,
+            )
+        )
+    storage_client = S3Storage(s3_client)
+    source_path = source_path.lstrip('/eodata/')
+    product_folder = source_path.split('/')[-1]
+    storage_client.download_product('DIAS', source_path, os.path.join(outdir, product_folder))
+
+
+def download_list_from_s3(source_paths, outdir, threads=5):
+    import boto3
+    from botocore.client import Config
+
+    from creodias_finder.creodias_storage import S3Storage
 
     s3_client = boto3.client(
         's3',
@@ -71,10 +96,9 @@ def download_from_s3(source_path, outdir):
             read_timeout=60,
         )
     )
-    storage_client = S3Storage(s3_client)
-    source_path = source_path.lstrip('/eodata/')
-    product_folder = source_path.split('/')[-1]
-    storage_client.download_product('DIAS', source_path, os.path.join(outdir, product_folder))
+    pool = ThreadPool(threads)
+    download_lambda = lambda x: download_from_s3(x, outdir, s3_client)
+    pool.map(download_lambda, source_paths)
 
 
 def download_list(uids, username, password, outdir, threads=1, show_progress=True):
