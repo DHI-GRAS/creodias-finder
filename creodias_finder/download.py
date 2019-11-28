@@ -42,7 +42,7 @@ def download(uid, username, password, outfile, show_progress=True):
     _download_raw_data(url, outfile, show_progress)
 
 
-def download_from_s3(source_path, target_path):
+def download_from_s3(source_path, outdir):
     """Download a file from CreoDIAS S3 storage to the given location
        (Works only when used from a CreoDIAS vm)
 
@@ -55,6 +55,7 @@ def download_from_s3(source_path, target_path):
     """
     import boto3
     from botocore.client import Config
+    import os
 
     from creodias_finder.creodias_storage import S3Storage
 
@@ -71,7 +72,9 @@ def download_from_s3(source_path, target_path):
         )
     )
     storage_client = S3Storage(s3_client)
-    storage_client.download_product('DIAS', source_path, str(target_path))
+    source_path = source_path.lstrip('/eodata/')
+    product_folder = source_path.split('/')[-1]
+    storage_client.download_product('DIAS', source_path, os.path.join(outdir, product_folder))
 
 
 def download_list(uids, username, password, outdir, threads=1, show_progress=True):
