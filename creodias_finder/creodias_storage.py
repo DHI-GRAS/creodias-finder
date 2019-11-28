@@ -84,11 +84,9 @@ class S3Storage:
         for s3_key in objects_list:
             file_path = s3_key['Key'].replace(product_key, '', 1)
             if file_path:
-                if len(file_path.split('/')) > 2:
-                    file_folder = os.path.dirname(file_path)
-                    dest.joinpath(Path(file_folder.lstrip('/'))).mkdir(
+                if file_path.endswith('/'):
+                    dest.joinpath(Path(file_path)).mkdir(
                         parents=True, exist_ok=True)
-                    files.append(Path(file_path.lstrip('/')))
                 else:
                     files.append(Path(file_path))
 
