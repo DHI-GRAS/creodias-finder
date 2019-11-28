@@ -95,8 +95,6 @@ class S3Storage:
 
         for item in files:
             dest.joinpath(item).parent.mkdir(parents=True, exist_ok=True)
-            print(pkey)
-            print(item)
             print(str(pkey.joinpath(item)))
             self.s3_client.download_file(bucket, str(
                 pkey.joinpath(item)), str(dest.joinpath(item)))
