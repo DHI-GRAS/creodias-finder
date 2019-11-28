@@ -91,7 +91,7 @@ class S3Storage:
                         parents=True, exist_ok=True)
                     files.append(Path(file_path.lstrip('/')))
                 else:
-                    files.append(Path(file_path))
+                    files.append(Path(file_path.lstrip('/')))
 
         for item in files:
             dest.joinpath(item).parent.mkdir(parents=True, exist_ok=True)
