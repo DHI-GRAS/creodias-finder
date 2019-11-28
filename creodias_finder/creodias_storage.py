@@ -1,6 +1,5 @@
 ''' S3 Storage client.
 '''
-import os
 import errno
 import pathlib
 from pathlib import Path
