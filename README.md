@@ -2,7 +2,7 @@
 Query the [CREO Data finder API](https://creodias.eu/eo-data-finder-api-manual) for available 
 products.
 
-Note: This is just a proof of concept, not finished, thoroughly tested or developed all the way to the end. You are still welcome to use it and also to submit pull requests fixing bugs you may find.
+Note: This is just a proof of concept, not finished, thoroughly tested or fully developed. You are still welcome to use it and also to submit pull requests fixing bugs you may find.
 
 ## Usage
 
