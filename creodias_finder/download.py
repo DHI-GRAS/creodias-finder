@@ -5,22 +5,22 @@ import concurrent.futures
 import requests
 from tqdm import tqdm
 
-DOWNLOAD_URL = 'https://zipper.creodias.eu/download'
-TOKEN_URL = 'https://auth.creodias.eu/auth/realms/DIAS/protocol/openid-connect/token'
+DOWNLOAD_URL = "https://zipper.creodias.eu/download"
+TOKEN_URL = "https://auth.creodias.eu/auth/realms/DIAS/protocol/openid-connect/token"
 
 
 def _get_token(username, password):
     token_data = {
-        'client_id': 'CLOUDFERRO_PUBLIC',
-        'username': username,
-        'password': password,
-        'grant_type': 'password'
+        "client_id": "CLOUDFERRO_PUBLIC",
+        "username": username,
+        "password": password,
+        "grant_type": "password",
     }
     response = requests.post(TOKEN_URL, data=token_data).json()
     try:
-        return response['access_token']
+        return response["access_token"]
     except KeyError:
-        raise RuntimeError(f'Unable to get token. Response was {response}')
+        raise RuntimeError(f"Unable to get token. Response was {response}")
 
 
 def download(uid, username, password, outfile, show_progress=True):
@@ -38,7 +38,7 @@ def download(uid, username, password, outfile, show_progress=True):
         Path where incomplete downloads are stored
     """
     token = _get_token(username, password)
-    url = f'{DOWNLOAD_URL}/{uid}?token={token}'
+    url = f"{DOWNLOAD_URL}/{uid}?token={token}"
     _download_raw_data(url, outfile, show_progress)
 
 
@@ -64,9 +64,10 @@ def download_list(uids, username, password, outdir, threads=1, show_progress=Tru
         mapping uids to paths to downloaded files
     """
     if show_progress:
-        pbar =  tqdm(total = len(uids), unit='files')
+        pbar = tqdm(total=len(uids), unit="files")
+
     def _download(uid):
-        outfile = Path(outdir) / f'{uid}.zip'
+        outfile = Path(outdir) / f"{uid}.zip"
         download(uid, username, password, outfile=outfile, show_progress=False)
         if show_progress:
             pbar.update(1)
@@ -80,13 +81,13 @@ def download_list(uids, username, password, outdir, threads=1, show_progress=Tru
 
 def _download_raw_data(url, outfile, show_progress):
     """Downloads data from url to outfile.incomplete and then moves to outfile"""
-    outfile_temp = str(outfile) + '.incomplete'
+    outfile_temp = str(outfile) + ".incomplete"
     try:
         downloaded_bytes = 0
         with requests.get(url, stream=True, timeout=10) as req:
-            with tqdm(unit='B', unit_scale=True, disable=not show_progress) as progress:
+            with tqdm(unit="B", unit_scale=True, disable=not show_progress) as progress:
                 chunk_size = 2 ** 20  # download in 1 MB chunks
-                with open(outfile_temp, 'wb') as fout:
+                with open(outfile_temp, "wb") as fout:
                     for chunk in req.iter_content(chunk_size=chunk_size):
                         if chunk:  # filter out keep-alive new chunks
                             fout.write(chunk)
