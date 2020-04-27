@@ -68,7 +68,7 @@ CREDENTIALS = {
 }
 
 # download single product by product ID
-download.download(ids[0], outfile='/home/andreas/data/', **CREDENTIALS)
+download.download(ids[0], outfile='/home/andreas/data/file.zip', **CREDENTIALS)
 
 # download a list of products, multithreaded
 download.download_list(ids[1:11], threads=10, **CREDENTIALS)
