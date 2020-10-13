@@ -62,11 +62,11 @@ Download selected products
 
 from creodias_finder import download
 
-ids = [result['id'] for key in results.values()]
+ids = [result['id'] for result in results.values()]
 
 CREDENTIALS = {
-    username: 'my-creodias-email',
-    password: 'my-creodias-password'
+    "username": 'my-creodias-email',
+    "password": 'my-creodias-password'
 }
 
 # download single product by product ID
