@@ -138,7 +138,7 @@ def _parse_argvalue(value):
             value.startswith(s[0]) and value.endswith(s[1])
             for s in ["[]", "{}", "//", "()"]
         ):
-            value = re.sub(r"\s", r"\ ", value, re.M)
+            value.replace(" ", "+")
         return value
     elif isinstance(value, (list, tuple)):
         # Handle value ranges
