@@ -101,6 +101,8 @@ def _get_next_page(links):
 def _parse_date(date):
     if isinstance(date, datetime.datetime):
         return date
+    elif isinstance(date, datetime.date):
+        return datetime.datetime.combine(date, datetime.time())
     try:
         return dateutil.parser.parse(date)
     except ValueError:
