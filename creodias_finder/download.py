@@ -6,22 +6,22 @@ from multiprocessing.pool import ThreadPool
 import requests
 from tqdm import tqdm
 
-DOWNLOAD_URL = 'https://zipper.creodias.eu/download'
-TOKEN_URL = 'https://auth.creodias.eu/auth/realms/DIAS/protocol/openid-connect/token'
+DOWNLOAD_URL = "https://zipper.creodias.eu/download"
+TOKEN_URL = "https://auth.creodias.eu/auth/realms/DIAS/protocol/openid-connect/token"
 
 
 def _get_token(username, password):
     token_data = {
-        'client_id': 'CLOUDFERRO_PUBLIC',
-        'username': username,
-        'password': password,
-        'grant_type': 'password'
+        "client_id": "CLOUDFERRO_PUBLIC",
+        "username": username,
+        "password": password,
+        "grant_type": "password",
     }
     response = requests.post(TOKEN_URL, data=token_data).json()
     try:
-        return response['access_token']
+        return response["access_token"]
     except KeyError:
-        raise RuntimeError(f'Unable to get token. Response was {response}')
+        raise RuntimeError(f"Unable to get token. Response was {response}")
 
 
 def download(uid, username, password, outfile, show_progress=True):
@@ -39,7 +39,7 @@ def download(uid, username, password, outfile, show_progress=True):
         Path where incomplete downloads are stored
     """
     token = _get_token(username, password)
-    url = f'{DOWNLOAD_URL}/{uid}?token={token}'
+    url = f"{DOWNLOAD_URL}/{uid}?token={token}"
     _download_raw_data(url, outfile, show_progress)
 
 
@@ -59,23 +59,26 @@ def download_from_s3(source_path, outdir, s3_client=None):
     import os
 
     from creodias_finder.creodias_storage import S3Storage
+
     if not s3_client:
         s3_client = boto3.client(
-            's3',
-            endpoint_url='http://data.cloudferro.com/',
+            "s3",
+            endpoint_url="http://data.cloudferro.com/",
             use_ssl=False,
-            aws_access_key_id='access',
-            aws_secret_access_key='secret',
+            aws_access_key_id="access",
+            aws_secret_access_key="secret",
             config=Config(
-                signature_version='s3',
+                signature_version="s3",
                 connect_timeout=60,
                 read_timeout=60,
-            )
+            ),
         )
     storage_client = S3Storage(s3_client)
-    source_path = source_path.lstrip('/eodata/')
-    product_folder = source_path.split('/')[-1]
-    storage_client.download_product('DIAS', source_path, os.path.join(outdir, product_folder))
+    source_path = source_path.lstrip("/eodata/")
+    product_folder = source_path.split("/")[-1]
+    storage_client.download_product(
+        "DIAS", source_path, os.path.join(outdir, product_folder)
+    )
 
 
 def download_list_from_s3(source_paths, outdir, threads=5):
@@ -85,16 +88,16 @@ def download_list_from_s3(source_paths, outdir, threads=5):
     from creodias_finder.creodias_storage import S3Storage
 
     s3_client = boto3.client(
-        's3',
-        endpoint_url='http://data.cloudferro.com/',
+        "s3",
+        endpoint_url="http://data.cloudferro.com/",
         use_ssl=False,
-        aws_access_key_id='access',
-        aws_secret_access_key='secret',
+        aws_access_key_id="access",
+        aws_secret_access_key="secret",
         config=Config(
-            signature_version='s3',
+            signature_version="s3",
             connect_timeout=60,
             read_timeout=60,
-        )
+        ),
     )
     pool = ThreadPool(threads)
     download_lambda = lambda x: download_from_s3(x, outdir, s3_client)
@@ -123,9 +126,10 @@ def download_list(uids, username, password, outdir, threads=1, show_progress=Tru
         mapping uids to paths to downloaded files
     """
     if show_progress:
-        pbar =  tqdm(total = len(uids), unit='files')
+        pbar = tqdm(total=len(uids), unit="files")
+
     def _download(uid):
-        outfile = Path(outdir) / f'{uid}.zip'
+        outfile = Path(outdir) / f"{uid}.zip"
         download(uid, username, password, outfile=outfile, show_progress=False)
         if show_progress:
             pbar.update(1)
@@ -139,13 +143,13 @@ def download_list(uids, username, password, outdir, threads=1, show_progress=Tru
 
 def _download_raw_data(url, outfile, show_progress):
     """Downloads data from url to outfile.incomplete and then moves to outfile"""
-    outfile_temp = str(outfile) + '.incomplete'
+    outfile_temp = str(outfile) + ".incomplete"
     try:
         downloaded_bytes = 0
         with requests.get(url, stream=True, timeout=100) as req:
-            with tqdm(unit='B', unit_scale=True, disable=not show_progress) as progress:
+            with tqdm(unit="B", unit_scale=True, disable=not show_progress) as progress:
                 chunk_size = 2 ** 20  # download in 1 MB chunks
-                with open(outfile_temp, 'wb') as fout:
+                with open(outfile_temp, "wb") as fout:
                     for chunk in req.iter_content(chunk_size=chunk_size):
                         if chunk:  # filter out keep-alive new chunks
                             fout.write(chunk)

@@ -9,15 +9,21 @@ from shapely.geometry import shape
 import re
 
 API_URL = (
-    'http://finder.creodias.eu/resto/api/collections/{collection}'
-    '/search.json?maxRecords=1000'
+    "http://finder.creodias.eu/resto/api/collections/{collection}"
+    "/search.json?maxRecords=1000"
 )
-ONLINE_STATUS_CODES = '34|37|0'
+ONLINE_STATUS_CODES = "34|37|0"
 
 
-def query(collection, start_date=None, end_date=None,
-          geometry=None, status=ONLINE_STATUS_CODES, **kwargs):
-    """ Query the EOData Finder API
+def query(
+    collection,
+    start_date=None,
+    end_date=None,
+    geometry=None,
+    status=ONLINE_STATUS_CODES,
+    **kwargs,
+):
+    """Query the EOData Finder API
 
     Parameters
     ----------
@@ -49,7 +55,7 @@ def query(collection, start_date=None, end_date=None,
         end_date,
         geometry,
         status,
-        **kwargs
+        **kwargs,
     )
 
     query_response = {}
@@ -57,28 +63,30 @@ def query(collection, start_date=None, end_date=None,
         response = requests.get(query_url)
         response.raise_for_status()
         data = response.json()
-        for feature in data['features']:
-            query_response[feature['id']] = feature
-        query_url = _get_next_page(data['properties']['links'])
+        for feature in data["features"]:
+            query_response[feature["id"]] = feature
+        query_url = _get_next_page(data["properties"]["links"])
     return query_response
 
 
-def _build_query(base_url, start_date=None, end_date=None, geometry=None, status=None, **kwargs):
+def _build_query(
+    base_url, start_date=None, end_date=None, geometry=None, status=None, **kwargs
+):
     query_params = {}
 
     if start_date is not None:
         start_date = _parse_date(start_date)
-        query_params['startDate'] = start_date.isoformat()
+        query_params["startDate"] = start_date.isoformat()
     if end_date is not None:
         end_date = _parse_date(end_date)
         end_date = _add_time(end_date)
-        query_params['completionDate'] = end_date.isoformat()
+        query_params["completionDate"] = end_date.isoformat()
 
     if geometry is not None:
-        query_params['geometry'] = _parse_geometry(geometry)
+        query_params["geometry"] = _parse_geometry(geometry)
 
     if status is not None:
-        query_params['status'] = status
+        query_params["status"] = status
 
     for attr, value in sorted(kwargs.items()):
         value = _parse_argvalue(value)
@@ -86,15 +94,15 @@ def _build_query(base_url, start_date=None, end_date=None, geometry=None, status
 
     url = base_url
     if query_params:
-        url += f'&{urlencode(query_params)}'
+        url += f"&{urlencode(query_params)}"
 
     return url
 
 
 def _get_next_page(links):
     for link in links:
-        if link['rel'] == 'next':
-            return link['href']
+        if link["rel"] == "next":
+            return link["href"]
     return False
 
 
@@ -106,7 +114,9 @@ def _parse_date(date):
     try:
         return dateutil.parser.parse(date)
     except ValueError:
-        raise ValueError('Date {date} is not in a valid format. Use Datetime object or iso string')
+        raise ValueError(
+            "Date {date} is not in a valid format. Use Datetime object or iso string"
+        )
 
 
 def _add_time(date):
@@ -120,7 +130,7 @@ def _tastes_like_wkt_polygon(geometry):
     try:
         return geometry.replace(", ", ",").replace(" ", "", 1).replace(" ", "+")
     except Exception:
-        raise ValueError('Geometry must be in well-known text format')
+        raise ValueError("Geometry must be in well-known text format")
 
 
 def _parse_geometry(geom):
@@ -130,7 +140,9 @@ def _parse_geometry(geom):
     except AttributeError:
         if _tastes_like_wkt_polygon(geom):
             return geom
-        raise ValueError('geometry must be a WKT polygon str or have a __geo_interface__')
+        raise ValueError(
+            "geometry must be a WKT polygon str or have a __geo_interface__"
+        )
 
 
 def _parse_argvalue(value):
