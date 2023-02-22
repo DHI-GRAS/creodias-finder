@@ -9,7 +9,7 @@ from shapely.geometry import shape
 import re
 
 API_URL = (
-    "http://finder.creodias.eu/resto/api/collections/{collection}"
+    "http://datahub.creodias.eu/resto/api/collections/{collection}"
     "/search.json?maxRecords=1000"
 )
 ONLINE_STATUS_CODES = "34|37|0"
