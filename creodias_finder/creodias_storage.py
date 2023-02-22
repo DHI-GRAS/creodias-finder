@@ -13,8 +13,8 @@ class S3Storage:
     """S3 product client."""
 
     def __init__(self, s3_client: boto3.session.Session.client) -> None:
-        megabyte = 1024 ** 2
-        gigabyte = 1024 ** 3
+        megabyte = 1024**2
+        gigabyte = 1024**3
         self.s3_client = s3_client
         self.s3_config = TransferConfig(
             io_chunksize=4 * megabyte, multipart_threshold=4 * gigabyte

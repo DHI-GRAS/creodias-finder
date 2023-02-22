@@ -148,7 +148,7 @@ def _download_raw_data(url, outfile, show_progress):
         downloaded_bytes = 0
         with requests.get(url, stream=True, timeout=100) as req:
             with tqdm(unit="B", unit_scale=True, disable=not show_progress) as progress:
-                chunk_size = 2 ** 20  # download in 1 MB chunks
+                chunk_size = 2**20  # download in 1 MB chunks
                 with open(outfile_temp, "wb") as fout:
                     for chunk in req.iter_content(chunk_size=chunk_size):
                         if chunk:  # filter out keep-alive new chunks
