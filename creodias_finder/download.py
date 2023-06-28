@@ -8,13 +8,12 @@ from tqdm import tqdm
 
 DOWNLOAD_URL = "https://zipper.creodias.eu/download"
 TOKEN_URL = (
-    "https://identity.cloudferro.com/auth/realms/DIAS/protocol/openid-connect/token"
+    "https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token"
 )
-
 
 def _get_token(username, password):
     token_data = {
-        "client_id": "CLOUDFERRO_PUBLIC",
+        "client_id": "cdse-public",
         "username": username,
         "password": password,
         "grant_type": "password",
