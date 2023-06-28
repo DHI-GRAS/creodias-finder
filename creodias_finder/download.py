@@ -7,9 +7,8 @@ import requests
 from tqdm import tqdm
 
 DOWNLOAD_URL = "https://zipper.creodias.eu/download"
-TOKEN_URL = (
-    "https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token"
-)
+TOKEN_URL = "https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token"
+
 
 def _get_token(username, password):
     token_data = {
