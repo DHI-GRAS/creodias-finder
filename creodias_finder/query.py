@@ -9,7 +9,7 @@ from shapely.geometry import shape
 import re
 
 API_URL = (
-    "http://datahub.creodias.eu/resto/api/collections/{collection}"
+    "https://catalogue.dataspace.copernicus.eu/resto/api/collections/{collection}"
     "/search.json?maxRecords=1000"
 )
 ONLINE_STATUS_CODES = "34|37|0"
