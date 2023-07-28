@@ -24,7 +24,7 @@ def _get_token(username, password):
         raise RuntimeError(f"Unable to get token. Response was {response}")
 
 
-def download(uid, username, password, outfile, show_progress=True):
+def download(uid, username, password, outfile, show_progress=True, token=None):
     """Download a file from CreoDIAS to the given location
 
     Parameters
@@ -38,7 +38,7 @@ def download(uid, username, password, outfile, show_progress=True):
     outfile:
         Path where incomplete downloads are stored
     """
-    token = _get_token(username, password)
+    token = token if token else _get_token(username, password)
     url = f"{DOWNLOAD_URL}/{uid}?token={token}"
     _download_raw_data(url, outfile, show_progress)
 
