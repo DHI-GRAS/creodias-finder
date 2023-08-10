@@ -132,7 +132,9 @@ def download_list(uids, username, password, outdir, threads=1, show_progress=Tru
 
     def _download(uid):
         outfile = Path(outdir) / f"{uid}.zip"
-        download(uid, username, password, outfile=outfile, show_progress=False, token=token)
+        download(
+            uid, username, password, outfile=outfile, show_progress=False, token=token
+        )
         if show_progress:
             pbar.update(1)
         return uid, outfile
