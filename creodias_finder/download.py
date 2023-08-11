@@ -24,7 +24,7 @@ def _get_token(username, password):
         raise RuntimeError(f"Unable to get token. Response was {response}")
 
 
-def download(uid, username, password, outfile, show_progress=True):
+def download(uid, username, password, outfile, show_progress=True, token=None):
     """Download a file from CreoDIAS to the given location
 
     Parameters
@@ -38,7 +38,7 @@ def download(uid, username, password, outfile, show_progress=True):
     outfile:
         Path where incomplete downloads are stored
     """
-    token = _get_token(username, password)
+    token = token if token else _get_token(username, password)
     url = f"{DOWNLOAD_URL}/{uid}?token={token}"
     _download_raw_data(url, outfile, show_progress)
 
@@ -128,9 +128,13 @@ def download_list(uids, username, password, outdir, threads=1, show_progress=Tru
     if show_progress:
         pbar = tqdm(total=len(uids), unit="files")
 
+    token = _get_token(username, password)
+
     def _download(uid):
         outfile = Path(outdir) / f"{uid}.zip"
-        download(uid, username, password, outfile=outfile, show_progress=False)
+        download(
+            uid, username, password, outfile=outfile, show_progress=False, token=token
+        )
         if show_progress:
             pbar.update(1)
         return uid, outfile
@@ -147,6 +151,7 @@ def _download_raw_data(url, outfile, show_progress):
     try:
         downloaded_bytes = 0
         with requests.get(url, stream=True, timeout=100) as req:
+            print(req.status_code)
             with tqdm(unit="B", unit_scale=True, disable=not show_progress) as progress:
                 chunk_size = 2**20  # download in 1 MB chunks
                 with open(outfile_temp, "wb") as fout:
