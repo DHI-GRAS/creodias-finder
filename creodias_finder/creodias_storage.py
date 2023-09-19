@@ -78,7 +78,7 @@ class S3Storage:
             dest = Path(destination.rstrip("/"))
         pkey = Path(product_key)
         try:
-            dest.mkdir(exist_ok=True)
+            dest.mkdir(parents=True, exist_ok=True)
         except OSError as exc:
             if exc.errno != errno.EEXIST:
                 raise
@@ -102,5 +102,5 @@ class S3Storage:
         for item in files:
             dest.joinpath(item).parent.mkdir(parents=True, exist_ok=True)
             self.s3_client.download_file(
-                bucket, str(pkey.joinpath(item)), str(dest.joinpath(item))
+                bucket, str(pkey.joinpath(item).as_posix()), str(dest.joinpath(item))
             )
