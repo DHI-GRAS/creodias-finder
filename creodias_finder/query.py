@@ -12,7 +12,6 @@ API_URL = (
     "https://catalogue.dataspace.copernicus.eu/resto/api/collections/{collection}"
     "/search.json?maxRecords=1000"
 )
-ONLINE_STATUS_CODES = "34|37|0"
 
 
 def query(
@@ -20,7 +19,7 @@ def query(
     start_date=None,
     end_date=None,
     geometry=None,
-    status=ONLINE_STATUS_CODES,
+    status="ONLINE",
     **kwargs,
 ):
     """Query the EOData Finder API
@@ -37,7 +36,7 @@ def query(
     geometry: WKT polygon or object impementing __geo_interface__
         area of interest as well-known text string
     status : str
-        allowed online/offline statuses (|-separated for OR)
+        allowed online/offline/all status (ONLINE || OFFLINE || ALL)
     **kwargs
         Additional arguments can be used to specify other query parameters,
         e.g. productType=L1GT
