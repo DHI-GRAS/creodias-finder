@@ -40,7 +40,7 @@ def query(
     **kwargs
         Additional arguments can be used to specify other query parameters,
         e.g. productType=L1GT
-        See https://creodias.eu/eo-data-finder-api-manual for a full list
+        See https://documentation.dataspace.copernicus.eu/APIs/OpenSearch.html for details
 
     Returns
     -------
