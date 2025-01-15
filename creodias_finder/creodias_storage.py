@@ -4,6 +4,7 @@
 import errno
 import pathlib
 from pathlib import Path
+import re
 from typing import Any, Dict, List, Union
 
 import boto3.session
@@ -63,6 +64,7 @@ class S3Storage:
         bucket: str,
         product_key: Union[pathlib.Path, str],
         destination: Union[pathlib.Path, str],
+        file_filter: str,
     ) -> None:
         """Download all files beginning with product_key into directory 'destination'.
         Downloaded files will have their prefixes stripped.
@@ -72,6 +74,7 @@ class S3Storage:
             bucket (str): bucket
             product_key (Union[pathlib.Path, str]): product key - path
             destination (Union[pathlib.Path, str]): directory to put the product
+            file_filter (str): regex expression to filter which product files to download
         """
         if isinstance(destination, Path):
             dest = Path(destination)
@@ -92,13 +95,11 @@ class S3Storage:
         files: List[Path] = []
         for s3_key in objects_list:
             file_path = s3_key["Key"].replace(product_key, "", 1)
-            if file_path:
-                if file_path.endswith("/"):
-                    dest.joinpath(Path(file_path.lstrip("/"))).mkdir(
-                        parents=True, exist_ok=True
-                    )
-                else:
-                    files.append(Path(file_path.lstrip("/")))
+            if file_path and not file_path.endswith("/"):
+                if file_filter:
+                    if not re.search(file_filter, file_path):
+                        continue
+                files.append(Path(file_path.lstrip("/")))
 
         for item in files:
             dest.joinpath(item).parent.mkdir(parents=True, exist_ok=True)

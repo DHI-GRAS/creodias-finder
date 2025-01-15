@@ -43,7 +43,7 @@ def download(uid, username, password, outfile, show_progress=True, token=None):
     _download_raw_data(url, outfile, show_progress)
 
 
-def download_from_s3(source_path, outdir, s3_client=None):
+def download_from_s3(source_path, outdir, s3_client=None, file_filter=""):
     """Download a file from CreoDIAS S3 storage to the given location
        (Works only when used from a CreoDIAS vm)
 
@@ -53,6 +53,10 @@ def download_from_s3(source_path, outdir, s3_client=None):
         CreoDIAS path to S3 object
     target_path:
         Path to write the product folder
+    s3_client:
+        S3 client, if None the default one is used
+    file_filter:
+        Regex expression to filter which product files to download
     """
     import boto3
     from botocore.client import Config
@@ -77,7 +81,7 @@ def download_from_s3(source_path, outdir, s3_client=None):
     source_path = source_path.removeprefix("/eodata/")
     product_folder = source_path.split("/")[-1]
     storage_client.download_product(
-        "DIAS", source_path, os.path.join(outdir, product_folder)
+        "DIAS", source_path, os.path.join(outdir, product_folder), file_filter
     )
 
 
