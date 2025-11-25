@@ -1,5 +1,4 @@
-""" S3 Storage client.
-"""
+"""S3 Storage client."""
 
 import errno
 import pathlib
