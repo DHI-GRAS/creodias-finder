@@ -1,7 +1,6 @@
+import concurrent.futures
 import shutil
 from pathlib import Path
-import concurrent.futures
-from multiprocessing.pool import ThreadPool
 
 import requests
 from tqdm import tqdm
@@ -24,13 +23,13 @@ def _get_token(username, password):
         raise RuntimeError(f"Unable to get token. Response was {response}")
 
 
-def download(uid, username, password, outfile, show_progress=True, token=None):
+def download(prod, username, password, outfile, show_progress=True, token=None):
     """Download a file from CreoDIAS to the given location
 
     Parameters
     ----------
-    uid:
-        CreoDIAS UID to download
+    prod:
+        CreoDIAS product to download
     username:
         Username
     password:
@@ -39,18 +38,19 @@ def download(uid, username, password, outfile, show_progress=True, token=None):
         Path where incomplete downloads are stored
     """
     token = token if token else _get_token(username, password)
+    uid = prod.get("Id")
     url = f"{DOWNLOAD_URL}/{uid}?token={token}"
     _download_raw_data(url, outfile, show_progress)
 
 
-def download_from_s3(source_path, outdir, s3_client=None, file_filter=""):
+def download_from_s3(prod, outdir, s3_client=None, file_filter=""):
     """Download a file from CreoDIAS S3 storage to the given location
        (Works only when used from a CreoDIAS vm)
 
     Parameters
     ----------
-    source_path:
-        CreoDIAS path to S3 object
+    prod:
+        CreoDIAS odata product
     target_path:
         Path to write the product folder
     s3_client:
@@ -58,9 +58,10 @@ def download_from_s3(source_path, outdir, s3_client=None, file_filter=""):
     file_filter:
         Regex expression to filter which product files to download
     """
+    import os
+
     import boto3
     from botocore.client import Config
-    import os
 
     from creodias_finder.creodias_storage import S3Storage
 
@@ -78,6 +79,7 @@ def download_from_s3(source_path, outdir, s3_client=None, file_filter=""):
             ),
         )
     storage_client = S3Storage(s3_client)
+    source_path = prod.get("S3Path")
     source_path = source_path.removeprefix("/eodata/")
     product_folder = source_path.split("/")[-1]
     storage_client.download_product(
@@ -85,36 +87,13 @@ def download_from_s3(source_path, outdir, s3_client=None, file_filter=""):
     )
 
 
-def download_list_from_s3(source_paths, outdir, threads=5):
-    import boto3
-    from botocore.client import Config
-
-    from creodias_finder.creodias_storage import S3Storage
-
-    s3_client = boto3.client(
-        "s3",
-        endpoint_url="http://data.cloudferro.com/",
-        use_ssl=False,
-        aws_access_key_id="access",
-        aws_secret_access_key="secret",
-        config=Config(
-            signature_version="s3",
-            connect_timeout=60,
-            read_timeout=60,
-        ),
-    )
-    pool = ThreadPool(threads)
-    download_lambda = lambda x: download_from_s3(x, outdir, s3_client)
-    pool.map(download_lambda, source_paths)
-
-
-def download_list(uids, username, password, outdir, threads=1, show_progress=True):
-    """Downloads a list of UIDS
+def download_list(products, username, password, outdir, threads=1, show_progress=True):
+    """Downloads a list of products
 
     Parameters
     ----------
-    uids:
-        A list of UIDs
+    products:
+        A list of odata creodias products
     username:
         Username
     password:
@@ -130,21 +109,22 @@ def download_list(uids, username, password, outdir, threads=1, show_progress=Tru
         mapping uids to paths to downloaded files
     """
     if show_progress:
-        pbar = tqdm(total=len(uids), unit="files")
+        pbar = tqdm(total=len(products), unit="files")
 
     token = _get_token(username, password)
 
-    def _download(uid):
-        outfile = Path(outdir) / f"{uid}.zip"
+    def _download(prod):
+        _id = prod.get("Id")
+        outfile = Path(outdir) / f"{_id}.zip"
         download(
-            uid, username, password, outfile=outfile, show_progress=False, token=token
+            prod, username, password, outfile=outfile, show_progress=False, token=token
         )
         if show_progress:
             pbar.update(1)
-        return uid, outfile
+        return prod, outfile
 
     with concurrent.futures.ThreadPoolExecutor(threads) as executor:
-        paths = dict(executor.map(_download, uids))
+        paths = dict(executor.map(_download, products))
 
     return paths
 
