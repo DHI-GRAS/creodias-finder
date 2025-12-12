@@ -84,7 +84,7 @@ def download_from_s3(prod, outdir, s3_client=None, file_filter=""):
     source_path = source_path.removeprefix("/eodata/")
     product_folder = source_path.split("/")[-1]
     download_path = os.path.join(outdir, product_folder)
-    storage_client.download_product("DIAS", source_path, download_path, file_filter)
+    storage_client.download_product("eodata", source_path, download_path, file_filter)
 
     return Path(download_path)
 
