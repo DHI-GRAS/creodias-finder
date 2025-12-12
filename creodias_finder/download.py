@@ -1,5 +1,6 @@
 import concurrent.futures
 import shutil
+from multiprocessing.pool import ThreadPool
 from pathlib import Path
 
 import requests
@@ -85,6 +86,29 @@ def download_from_s3(prod, outdir, s3_client=None, file_filter=""):
     storage_client.download_product(
         "DIAS", source_path, os.path.join(outdir, product_folder), file_filter
     )
+
+
+def download_list_from_s3(products, outdir, threads=5):
+    from functools import partial
+
+    import boto3
+    from botocore.client import Config
+
+    s3_client = boto3.client(
+        "s3",
+        endpoint_url="http://data.cloudferro.com/",
+        use_ssl=False,
+        aws_access_key_id="access",
+        aws_secret_access_key="secret",
+        config=Config(
+            signature_version="s3",
+            connect_timeout=60,
+            read_timeout=60,
+        ),
+    )
+    pool = ThreadPool(threads)
+    download_lambda = partial(download_from_s3, outdir=outdir, s3_client=s3_client)
+    pool.map(download_lambda, products)
 
 
 def download_list(products, username, password, outdir, threads=1, show_progress=True):
