@@ -83,9 +83,10 @@ def download_from_s3(prod, outdir, s3_client=None, file_filter=""):
     source_path = prod.get("S3Path")
     source_path = source_path.removeprefix("/eodata/")
     product_folder = source_path.split("/")[-1]
-    storage_client.download_product(
-        "DIAS", source_path, os.path.join(outdir, product_folder), file_filter
-    )
+    download_path = os.path.join(outdir, product_folder)
+    storage_client.download_product("eodata", source_path, download_path, file_filter)
+
+    return Path(download_path)
 
 
 def download_list_from_s3(products, outdir, threads=5):
