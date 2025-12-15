@@ -80,3 +80,7 @@ download.download(ids[0], outfile='/home/andreas/data/file.zip', **CREDENTIALS)
 # download a list of products, multithreaded
 download.download_list(ids[1:11], threads=10, **CREDENTIALS)
 ```
+
+## Changelog
+15-12-2025 - BREAKING CHANGES; Updated API to use CDSE's OData api instead of Opensearch due to [deprecation](https://dataspace.copernicus.eu/news/2025-10-16-opensearch-catalogue-api-decommissioning-notice) in start 2026.\
+You will now have to change the way you use query results and will now pass entire query result objects to download function and let that take care of downloading with ID or S3_PATH
